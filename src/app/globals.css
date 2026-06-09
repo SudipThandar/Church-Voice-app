@@ -1,0 +1,130 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+:root {
+  --background: #0B0F19;
+  --foreground: #F1F5F9;
+  --primary: #3B5CB8;
+  --primary-light: #5B7CD8;
+  --accent: #D4AF37;
+  --accent-light: #E8C84A;
+  --dark: #0F172A;
+  --muted: #94A3B8;
+  --border: #1E293B;
+  --card: #0E1524;
+  --popover: #0E1524;
+  --popover-foreground: #F1F5F9;
+  --radius: 1rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-light: var(--primary-light);
+  --color-accent: var(--accent);
+  --color-accent-light: var(--accent-light);
+  --color-dark: var(--dark);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-card: var(--card);
+  --font-sans: var(--font-outfit), var(--font-geist-sans), sans-serif;
+  --font-serif: var(--font-cinzel), Georgia, serif;
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Custom premium styles */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.6);
+}
+
+.glass-dark {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.shadow-premium {
+  box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.03);
+}
+
+.shadow-glow-accent {
+  box-shadow: 0 0 20px -2px rgba(212, 175, 55, 0.25);
+}
+
+.shadow-glow-primary {
+  box-shadow: 0 0 25px -5px rgba(30, 58, 138, 0.2);
+}
+
+.book-spine-glow {
+  box-shadow: inset 8px 0 16px -6px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes pulse-glow {
+  0%, 100% { 
+    box-shadow: 0 0 5px rgba(212, 175, 55, 0.3); 
+    border-color: rgba(212, 175, 55, 0.3);
+  }
+  50% { 
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.6); 
+    border-color: rgba(212, 175, 55, 0.7);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes recording-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.95); }
+}
+
+.animate-recording-pulse {
+  animation: recording-pulse 1.4s ease-in-out infinite;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Custom premium scrollbar for cards and readers */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #E2E8F0;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #CBD5E1;
+}
+
