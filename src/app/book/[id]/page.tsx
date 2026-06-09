@@ -76,7 +76,7 @@ export default function BookDetailsPage() {
           <div className="mt-8 space-y-4">
             <Button
               size="lg"
-              className="w-full bg-accent text-foreground hover:bg-accent/90 hover:scale-[1.01] font-bold h-14 text-base rounded-xl shadow-lg transition-all duration-200 cursor-pointer"
+              className="w-full bg-accent text-dark hover:bg-accent/90 hover:scale-[1.01] font-bold h-14 text-base rounded-xl shadow-lg transition-all duration-200 cursor-pointer"
               onClick={handlePlayBook}
             >
               <Play className="mr-2 h-5 w-5 fill-current" />
@@ -84,34 +84,34 @@ export default function BookDetailsPage() {
               <span className="ml-auto text-xs opacity-80 font-semibold font-mono bg-black/10 px-2.5 py-1 rounded-full">{formatDuration(book.totalDuration)}</span>
             </Button>
 
-            <div className="space-y-4 rounded-2xl border border-border/40 bg-card p-6 shadow-premium">
+            <div className="space-y-4 rounded-2xl border border-border/40 bg-white p-6 shadow-premium">
               <h3 className="text-xs font-bold text-muted uppercase tracking-widest border-b border-border/20 pb-2">Volume Metadata</h3>
               <div className="flex items-center gap-3 text-sm">
                 <User className="h-4.5 w-4.5 text-primary" />
                 <div>
                   <p className="text-[10px] uppercase font-bold tracking-wider text-muted">Narrator</p>
-                  <p className="font-semibold text-foreground">{book.narrator}</p>
+                  <p className="font-semibold text-dark">{book.narrator}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <Globe className="h-4.5 w-4.5 text-primary" />
                 <div>
                   <p className="text-[10px] uppercase font-bold tracking-wider text-muted">Language / Translation</p>
-                  <p className="font-semibold text-foreground">{book.language}</p>
+                  <p className="font-semibold text-dark">{book.language}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <Layers className="h-4.5 w-4.5 text-primary" />
                 <div>
                   <p className="text-[10px] uppercase font-bold tracking-wider text-muted">Scope</p>
-                  <p className="font-semibold text-foreground">{book.totalChapters} chapters · {book.totalVerses} verses</p>
+                  <p className="font-semibold text-dark">{book.totalChapters} chapters · {book.totalVerses} verses</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <Clock className="h-4.5 w-4.5 text-primary" />
                 <div>
                   <p className="text-[10px] uppercase font-bold tracking-wider text-muted">Total Run Duration</p>
-                  <p className="font-semibold text-foreground font-mono">{formatDuration(book.totalDuration)}</p>
+                  <p className="font-semibold text-dark font-mono">{formatDuration(book.totalDuration)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 text-sm pt-2 border-t border-border/20">
@@ -135,8 +135,8 @@ export default function BookDetailsPage() {
           transition={{ delay: 0.1 }}
           className="lg:col-span-2 space-y-6"
         >
-          <div className="rounded-2xl border border-border/40 bg-card p-6 shadow-premium">
-            <h2 className="text-xl font-bold text-foreground font-serif flex items-center gap-2">
+          <div className="rounded-2xl border border-border/40 bg-white p-6 shadow-premium">
+            <h2 className="text-xl font-bold text-dark font-serif flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-accent" /> About This Scripture
             </h2>
             <p className="mt-4 text-muted leading-relaxed font-sans text-base">{book.description}</p>
@@ -144,7 +144,7 @@ export default function BookDetailsPage() {
           </div>
 
           <div>
-            <h2 className="text-xl font-bold text-foreground font-serif mb-4">Chapters Index</h2>
+            <h2 className="text-xl font-bold text-dark font-serif mb-4">Chapters Index</h2>
             <ScrollArea className="h-[550px] pr-4 rounded-xl">
               <div className="space-y-3">
                 {book.chapters.map((chapter, i) => (
@@ -153,14 +153,14 @@ export default function BookDetailsPage() {
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.02 }}
-                    className="group flex items-center justify-between rounded-xl border border-border/40 bg-card p-4 hover:bg-primary/5 hover:border-primary/20 transition-all duration-200"
+                    className="group flex items-center justify-between rounded-xl border border-border/40 bg-white p-4 hover:bg-primary/5 hover:border-primary/20 transition-all duration-200"
                   >
                     <div className="flex items-center gap-4">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-base font-bold text-primary group-hover:bg-primary group-hover:text-white transition-colors">
                         {chapter.number}
                       </div>
                       <div>
-                        <p className="font-bold text-foreground text-base">{chapter.title}</p>
+                        <p className="font-bold text-dark text-base">{chapter.title}</p>
                         <p className="text-xs text-muted font-medium mt-0.5">{chapter.verses.length} verses · {formatDuration(chapter.duration)}</p>
                       </div>
                     </div>

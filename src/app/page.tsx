@@ -77,7 +77,7 @@ export default function LandingPage() {
                 </Button>
               </Link>
               <Link href="/upload">
-                <Button size="lg" variant="outline" className="border-accent/40 bg-white/5 text-white hover:bg-accent/20 hover:border-accent/60 px-10 h-13 text-base rounded-xl backdrop-blur-sm transition-all duration-200 cursor-pointer">
+                <Button size="lg" variant="outline" className="border-white/25 text-white hover:bg-white/10 px-10 h-13 text-base rounded-xl backdrop-blur-sm transition-all duration-200 cursor-pointer">
                   Start Narrating
                 </Button>
               </Link>
@@ -90,7 +90,7 @@ export default function LandingPage() {
       <section className="container mx-auto px-4 py-20 relative">
         <div className="text-center mb-16">
           <span className="text-xs font-bold text-primary tracking-widest uppercase bg-primary/10 px-3 py-1 rounded-full">Work Flow</span>
-          <h2 className="text-3xl font-bold text-foreground font-serif mt-3 sm:text-4xl">Platform Architecture</h2>
+          <h2 className="text-3xl font-bold text-dark font-serif mt-3 sm:text-4xl">Platform Architecture</h2>
         </div>
         <div className="grid gap-6 md:grid-cols-4">
           {[
@@ -105,10 +105,10 @@ export default function LandingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: idx * 0.1 }}
-              className="relative p-6 rounded-2xl border border-border/60 bg-card shadow-premium group hover:border-primary/20 transition-all duration-300"
+              className="relative p-6 rounded-2xl border border-border/60 bg-white shadow-premium group hover:border-primary/20 transition-all duration-300"
             >
               <div className="text-4xl font-extrabold text-accent/20 font-serif mb-4">{item.step}</div>
-              <h4 className="text-lg font-bold text-foreground mb-2">{item.title}</h4>
+              <h4 className="text-lg font-bold text-dark mb-2">{item.title}</h4>
               <p className="text-sm text-muted leading-relaxed">{item.desc}</p>
             </motion.div>
           ))}
@@ -116,7 +116,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features */}
-      <section className="bg-card py-24 border-y border-border/40">
+      <section className="bg-white py-24 border-y border-border/40">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0 }}
@@ -125,7 +125,7 @@ export default function LandingPage() {
             className="mb-16 text-center"
           >
             <span className="text-xs font-bold text-primary tracking-widest uppercase bg-primary/10 px-3 py-1 rounded-full">Core Features</span>
-            <h2 className="text-3xl font-bold text-foreground font-serif mt-3 sm:text-4xl">Built for Professional Narration</h2>
+            <h2 className="text-3xl font-bold text-dark font-serif mt-3 sm:text-4xl">Built for Professional Narration</h2>
             <p className="mt-4 text-lg text-muted max-w-2xl mx-auto">
               Everything needed to manage text transcription, voiceovers, and community audio experiences.
             </p>
@@ -138,12 +138,12 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="group rounded-2xl border border-border/50 bg-card p-7 shadow-premium hover:shadow-glow-primary hover:-translate-y-1 transition-all duration-300 hover:border-primary/20"
+                className="group rounded-2xl border border-border/50 bg-white p-7 shadow-premium hover:shadow-glow-primary hover:-translate-y-1 transition-all duration-300 hover:border-primary/20"
               >
-                <div className="mb-5 flex h-13 w-13 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-foreground transition-colors duration-300 shadow-sm">
+                <div className="mb-5 flex h-13 w-13 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors duration-300 shadow-sm">
                   <feature.icon className="h-6 w-6" />
                 </div>
-                <h3 className="mb-3 text-lg font-bold text-foreground">{feature.title}</h3>
+                <h3 className="mb-3 text-lg font-bold text-dark">{feature.title}</h3>
                 <p className="text-sm text-muted leading-relaxed">{feature.description}</p>
               </motion.div>
             ))}
@@ -195,7 +195,7 @@ export default function LandingPage() {
                 </Button>
               </Link>
               <Link href="/library">
-                <Button size="lg" variant="outline" className="border-accent/40 bg-white/5 text-white hover:bg-accent/20 hover:border-accent/60 px-10 h-13 text-base rounded-xl backdrop-blur-sm transition-all duration-200 cursor-pointer">
+                <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 px-10 h-13 text-base rounded-xl backdrop-blur-sm transition-colors cursor-pointer">
                   Browse Audio Books
                 </Button>
               </Link>
@@ -205,14 +205,14 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 bg-card">
+      <footer className="border-t border-border/50 bg-white">
         <div className="container mx-auto px-4 py-10">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
                 <BookOpen className="h-4.5 w-4.5 text-white" />
               </div>
-              <span className="font-serif font-bold text-foreground text-lg">Church Voice</span>
+              <span className="font-serif font-bold text-dark text-lg">Church Voice</span>
             </div>
             <p className="text-sm text-muted">© 2026 Church Voice Scripture Platform. Designed for modern church audio narration.</p>
           </div>

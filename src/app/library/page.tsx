@@ -26,7 +26,7 @@ export default function LibraryPage() {
         className="mb-10 text-center md:text-left"
       >
         <span className="text-xs font-bold text-accent tracking-widest uppercase bg-accent/10 px-3 py-1 rounded-full">Archive</span>
-        <h1 className="text-4xl font-bold text-foreground font-serif mt-3">Scripture Library</h1>
+        <h1 className="text-4xl font-bold text-dark font-serif mt-3">Scripture Library</h1>
         <p className="mt-2 text-muted text-lg">Access and listen to complete recorded scripture volumes.</p>
       </motion.div>
 
@@ -40,7 +40,7 @@ export default function LibraryPage() {
         <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted group-hover:text-primary transition-colors" />
         <Input
           placeholder="Search by book title, author, or narrator..."
-          className="pl-12 h-14 text-base bg-card border-border/80 rounded-2xl shadow-sm focus-visible:ring-accent group-hover:border-primary/30 transition-all duration-300"
+          className="pl-12 h-14 text-base bg-white border-border/80 rounded-2xl shadow-sm focus-visible:ring-accent group-hover:border-primary/30 transition-all duration-300"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -56,7 +56,7 @@ export default function LibraryPage() {
             transition={{ duration: 0.5, delay: i * 0.05 }}
           >
             <Link href={`/book/${book.id}`} className="group block h-full">
-              <div className="flex flex-col h-full overflow-hidden rounded-2xl border border-border/40 bg-card shadow-premium hover:shadow-glow-primary hover:-translate-y-2 transition-all duration-300">
+              <div className="flex flex-col h-full overflow-hidden rounded-2xl border border-border/40 bg-white shadow-premium hover:shadow-glow-primary hover:-translate-y-2 transition-all duration-300">
                 {/* 3D Book Cover Cover container */}
                 <div className={`relative bg-gradient-to-br ${book.coverColor} p-6 pb-10 flex flex-col justify-between aspect-[4/5] overflow-hidden rounded-t-2xl`}>
                   {/* Spine Crease Reflection */}
@@ -82,17 +82,17 @@ export default function LibraryPage() {
                 </div>
 
                 {/* Cover Details */}
-                <div className="p-5 flex-1 flex flex-col justify-between bg-card border-t border-border/30">
+                <div className="p-5 flex-1 flex flex-col justify-between bg-white border-t border-border/30">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between text-xs text-muted font-medium border-b border-border/20 pb-2.5">
                       <span className="text-[10px] tracking-widest uppercase">Language</span>
-                      <span className="text-foreground flex items-center gap-1">
+                      <span className="text-dark flex items-center gap-1">
                         <Globe className="h-3 w-3 text-primary" /> {book.language}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-xs text-muted font-medium border-b border-border/20 pb-2.5">
                       <span className="text-[10px] tracking-widest uppercase">Narrator</span>
-                      <span className="text-foreground truncate max-w-[150px] flex items-center gap-1">
+                      <span className="text-dark truncate max-w-[150px] flex items-center gap-1">
                         <User className="h-3 w-3 text-primary" /> {book.narrator}
                       </span>
                     </div>
@@ -110,9 +110,9 @@ export default function LibraryPage() {
       </div>
 
       {filtered.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-24 text-muted bg-card border border-border/40 rounded-3xl p-10 max-w-md mx-auto mt-10 shadow-premium">
+        <div className="flex flex-col items-center justify-center py-24 text-muted bg-white border border-border/40 rounded-3xl p-10 max-w-md mx-auto mt-10 shadow-premium">
           <BookOpen className="h-16 w-16 mb-4 text-muted/30" />
-          <p className="text-xl font-bold text-foreground font-serif">No Volumes Found</p>
+          <p className="text-xl font-bold text-dark font-serif">No Volumes Found</p>
           <p className="text-sm mt-1 text-center">We couldn&apos;t find any scripture books matching that query. Please search again.</p>
         </div>
       )}

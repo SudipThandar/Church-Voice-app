@@ -2,18 +2,16 @@
 @import "tw-animate-css";
 
 :root {
-  --background: #0B0F19;
-  --foreground: #F1F5F9;
-  --primary: #3B5CB8;
-  --primary-light: #5B7CD8;
+  --background: #F8FAFC;
+  --foreground: #0F172A;
+  --primary: #1E3A8A;
+  --primary-light: #3B5CB8;
   --accent: #D4AF37;
   --accent-light: #E8C84A;
   --dark: #0F172A;
-  --muted: #94A3B8;
-  --border: #1E293B;
-  --card: #0E1524;
-  --popover: #0E1524;
-  --popover-foreground: #F1F5F9;
+  --muted: #64748B;
+  --border: #E2E8F0;
+  --card: #FFFFFF;
   --radius: 1rem;
 }
 

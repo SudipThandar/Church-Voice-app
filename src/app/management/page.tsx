@@ -22,7 +22,7 @@ export default function ManagementPage() {
         className="mb-10 text-center md:text-left"
       >
         <span className="text-xs font-bold text-accent tracking-widest uppercase bg-accent/10 px-3 py-1 rounded-full">Orchestration</span>
-        <h1 className="text-4xl font-bold text-foreground font-serif mt-3">Scripture Management</h1>
+        <h1 className="text-4xl font-bold text-dark font-serif mt-3">Scripture Management</h1>
         <p className="mt-2 text-muted text-lg">Track, assign, and record scripture chapters for narration.</p>
       </motion.div>
 
@@ -33,7 +33,7 @@ export default function ManagementPage() {
           animate={{ opacity: 1, x: 0 }}
           className="lg:col-span-1"
         >
-          <div className="rounded-2xl border border-border/40 bg-card p-5 shadow-premium">
+          <div className="rounded-2xl border border-border/40 bg-white p-5 shadow-premium">
             <h2 className="mb-4 text-xs font-bold text-muted uppercase tracking-widest border-b border-border/20 pb-2 flex items-center gap-2">
               <LayoutGrid className="h-4 w-4 text-primary" /> Scripture Books
             </h2>
@@ -49,7 +49,7 @@ export default function ManagementPage() {
                         "w-full flex items-center gap-3 rounded-xl p-3 text-left transition-all border",
                         active
                           ? "bg-primary border-primary text-white shadow-glow-primary scale-[1.01]"
-                          : "hover:bg-muted/40 border-transparent text-foreground hover:border-border/30"
+                          : "hover:bg-muted/40 border-transparent text-dark hover:border-border/30"
                       )}
                     >
                       <div className={cn(
@@ -79,10 +79,10 @@ export default function ManagementPage() {
           transition={{ delay: 0.1 }}
           className="lg:col-span-3"
         >
-          <div className="rounded-2xl border border-border/40 bg-card p-6 md:p-8 shadow-premium">
+          <div className="rounded-2xl border border-border/40 bg-white p-6 md:p-8 shadow-premium">
             <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/20 pb-5">
               <div>
-                <h2 className="text-2xl font-bold text-foreground font-serif flex items-center gap-2">
+                <h2 className="text-2xl font-bold text-dark font-serif flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-accent" /> {selectedBook.title}
                 </h2>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
@@ -122,7 +122,7 @@ export default function ManagementPage() {
                       initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: ci * 0.02 }}
-                      className="rounded-xl border border-border/40 p-5 hover:border-primary/20 transition-all duration-200 bg-card"
+                      className="rounded-xl border border-border/40 p-5 hover:border-primary/20 transition-all duration-200 bg-white"
                     >
                       <div className="flex items-center justify-between mb-3.5">
                         <div className="flex items-center gap-3">
@@ -130,7 +130,7 @@ export default function ManagementPage() {
                             {chapter.number}
                           </div>
                           <div>
-                            <p className="font-bold text-foreground text-base">
+                            <p className="font-bold text-dark text-base">
                               {chapter.title}
                               <span className="ml-2.5 text-xs text-muted font-semibold bg-muted/40 px-2 py-0.5 rounded-lg">
                                 {chapter.verses.length} verses
@@ -139,7 +139,7 @@ export default function ManagementPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className="text-xs font-mono font-bold text-white/50 bg-slate-100 px-2.5 py-1 rounded-lg border border-border/30">{chapterCompletion}% Done</span>
+                          <span className="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-border/30">{chapterCompletion}% Done</span>
                           <Link href={`/recording/${selectedBook.id}/${chapter.number}`}>
                             <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-primary hover:text-primary hover:bg-primary/10 cursor-pointer">
                               <Mic className="h-4.5 w-4.5" />

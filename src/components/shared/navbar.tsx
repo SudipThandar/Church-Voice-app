@@ -23,14 +23,14 @@ export function Navbar() {
   const [open, setOpen] = useState(false)
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-[#0E1524]/80 backdrop-blur-md shadow-sm">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-white/70 backdrop-blur-md shadow-sm">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-3 group">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-light shadow-md shadow-glow-primary group-hover:scale-105 transition-transform duration-200">
             <BookOpen className="h-5 w-5 text-white" />
           </div>
           <div>
-            <span className="text-xl font-bold tracking-tight text-foreground font-serif group-hover:text-primary transition-colors">Church Voice</span>
+            <span className="text-xl font-bold tracking-tight text-dark font-serif group-hover:text-primary transition-colors">Church Voice</span>
             <span className="ml-2 text-xs font-semibold text-accent tracking-widest uppercase">Scripture</span>
           </div>
         </Link>
@@ -47,7 +47,7 @@ export function Navbar() {
                     "relative gap-2 text-sm font-medium transition-all duration-200 px-3 py-1.5 rounded-lg",
                     isActive 
                       ? "text-primary bg-primary/5 font-semibold" 
-                      : "text-muted hover:text-foreground hover:bg-white/5"
+                      : "text-muted hover:text-dark hover:bg-muted/30"
                   )}
                 >
                   <link.icon className={cn("h-4 w-4", isActive ? "text-primary" : "text-muted")} />
@@ -83,7 +83,7 @@ export function Navbar() {
                         "w-full justify-start gap-3 text-base h-11 rounded-xl",
                         isActive 
                           ? "bg-primary/5 text-primary font-bold border-l-4 border-accent" 
-                          : "text-muted hover:text-foreground"
+                          : "text-muted hover:text-dark"
                       )}
                     >
                       <link.icon className="h-5 w-5" />

@@ -60,16 +60,16 @@ export default function UploadPage() {
         className="mb-10 text-center"
       >
         <span className="text-xs font-bold text-accent tracking-widest uppercase bg-accent/10 px-3 py-1 rounded-full">Ingestion Hub</span>
-        <h1 className="text-4xl font-bold text-foreground font-serif mt-3">Upload Scripture</h1>
+        <h1 className="text-4xl font-bold text-dark font-serif mt-3">Upload Scripture</h1>
         <p className="mt-2 text-muted">Import a manuscript PDF or EPUB file to begin audio narration recording.</p>
       </motion.div>
 
       {/* Step Indicator */}
       <div className="flex items-center justify-between max-w-sm mx-auto mb-10 text-xs font-bold text-muted uppercase tracking-wider">
         <span className={!file && !imported ? "text-primary border-b-2 border-accent pb-1" : "text-muted"}>1. Upload File</span>
-        <span className="text-white/80">➔</span>
+        <span className="text-muted">➔</span>
         <span className={file && !imported ? "text-primary border-b-2 border-accent pb-1" : "text-muted"}>2. Parse Metadata</span>
-        <span className="text-white/80">➔</span>
+        <span className="text-muted">➔</span>
         <span className={imported ? "text-primary border-b-2 border-accent pb-1" : "text-muted"}>3. Ready</span>
       </div>
 
@@ -84,7 +84,7 @@ export default function UploadPage() {
           className={`relative rounded-3xl border-2 border-dashed p-16 text-center transition-all duration-300 shadow-premium ${
             isDragging
               ? "border-accent bg-accent/5 shadow-glow-accent"
-              : "border-border/85 bg-card hover:border-primary/40"
+              : "border-border/85 bg-white hover:border-primary/40"
           }`}
         >
           <input
@@ -99,7 +99,7 @@ export default function UploadPage() {
               <Upload className="h-10 w-10" />
             </div>
             <div>
-              <p className="text-xl font-bold text-foreground">
+              <p className="text-xl font-bold text-dark">
                 {isDragging ? "Drop your file here" : "Drag & drop your manuscript"}
               </p>
               <p className="mt-1.5 text-sm text-muted">Supports standardized .PDF and .EPUB formats</p>
@@ -122,7 +122,7 @@ export default function UploadPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="rounded-3xl border border-border/40 bg-card p-8 shadow-premium"
+            className="rounded-3xl border border-border/40 bg-white p-8 shadow-premium"
           >
             <div className="mb-6 flex items-start justify-between border-b border-border/20 pb-5">
               <div className="flex items-center gap-4">
@@ -130,7 +130,7 @@ export default function UploadPage() {
                   <FileText className="h-8 w-8" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-foreground text-lg leading-tight">{file.name}</h3>
+                  <h3 className="font-bold text-dark text-lg leading-tight">{file.name}</h3>
                   <p className="text-xs font-semibold text-muted mt-1 uppercase tracking-wider font-mono">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
                 </div>
               </div>
@@ -140,25 +140,25 @@ export default function UploadPage() {
             </div>
 
             <div className="mb-6 space-y-4 rounded-2xl bg-muted/40 p-6 border border-border/20">
-              <h4 className="font-bold text-sm uppercase tracking-wider text-foreground flex items-center gap-1.5">
+              <h4 className="font-bold text-sm uppercase tracking-wider text-dark flex items-center gap-1.5">
                 <Sparkles className="h-4 w-4 text-accent fill-accent" /> Analyzer Diagnostics
               </h4>
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between text-sm border-b border-border/20 pb-2.5">
                   <span className="text-muted">Parsed Book:</span>
-                  <span className="font-bold text-foreground font-serif">{uploadResult.title}</span>
+                  <span className="font-bold text-dark font-serif">{uploadResult.title}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm border-b border-border/20 pb-2.5">
                   <span className="text-muted">Detected Chapters:</span>
-                  <span className="font-semibold text-foreground font-mono bg-card px-2 py-0.5 rounded border border-border/40 text-xs">{uploadResult.detectedChapters}</span>
+                  <span className="font-semibold text-dark font-mono bg-white px-2 py-0.5 rounded border border-border/40 text-xs">{uploadResult.detectedChapters}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm border-b border-border/20 pb-2.5">
                   <span className="text-muted">Detected Verses:</span>
-                  <span className="font-semibold text-foreground font-mono bg-card px-2 py-0.5 rounded border border-border/40 text-xs">{uploadResult.detectedVerses.toLocaleString()}</span>
+                  <span className="font-semibold text-dark font-mono bg-white px-2 py-0.5 rounded border border-border/40 text-xs">{uploadResult.detectedVerses.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted">Identified Language:</span>
-                  <span className="font-semibold text-foreground flex items-center gap-1.5">
+                  <span className="font-semibold text-dark flex items-center gap-1.5">
                     <Globe className="h-4 w-4 text-primary" /> {uploadResult.language}
                   </span>
                 </div>
@@ -167,13 +167,13 @@ export default function UploadPage() {
 
             <Button
               size="lg"
-              className="w-full bg-accent text-foreground hover:bg-accent/90 font-bold h-13 text-base rounded-xl shadow-lg transition-transform hover:scale-[1.01] cursor-pointer"
+              className="w-full bg-accent text-dark hover:bg-accent/90 font-bold h-13 text-base rounded-xl shadow-lg transition-transform hover:scale-[1.01] cursor-pointer"
               onClick={handleImport}
               disabled={importing}
             >
               {importing ? (
                 <span className="flex items-center gap-2.5 justify-center">
-                  <svg className="animate-spin h-5 w-5 text-foreground" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-5 w-5 text-dark" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
@@ -196,14 +196,14 @@ export default function UploadPage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="rounded-3xl border border-border/40 bg-card p-10 text-center shadow-premium"
+            className="rounded-3xl border border-border/40 bg-white p-10 text-center shadow-premium"
           >
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 shadow-md">
               <CheckCircle className="h-9 w-9" />
             </div>
-            <h2 className="text-2xl font-bold text-foreground font-serif">Structure Imported!</h2>
+            <h2 className="text-2xl font-bold text-dark font-serif">Structure Imported!</h2>
             <p className="mt-3 text-muted leading-relaxed max-w-md mx-auto">
-              <span className="font-serif font-bold text-foreground">{uploadResult.title}</span> has been compiled into the script manager with {uploadResult.detectedChapters} chapters and {uploadResult.detectedVerses.toLocaleString()} verses.
+              <span className="font-serif font-bold text-dark">{uploadResult.title}</span> has been compiled into the script manager with {uploadResult.detectedChapters} chapters and {uploadResult.detectedVerses.toLocaleString()} verses.
             </p>
             <div className="mt-8 flex justify-center gap-4">
               <Link href="/management">

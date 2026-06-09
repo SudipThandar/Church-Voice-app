@@ -16,7 +16,7 @@ export default function AnalyticsPage() {
         className="mb-10 text-center md:text-left"
       >
         <span className="text-xs font-bold text-accent tracking-widest uppercase bg-accent/10 px-3 py-1 rounded-full">Telemetry</span>
-        <h1 className="text-4xl font-bold text-foreground font-serif mt-3">Platform Analytics</h1>
+        <h1 className="text-4xl font-bold text-dark font-serif mt-3">Platform Analytics</h1>
         <p className="mt-2 text-muted text-lg">Detailed run analysis tracking engagement rates, listener indexes, and narration growth.</p>
       </motion.div>
 
@@ -35,9 +35,9 @@ export default function AnalyticsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Card className="rounded-3xl border border-border/40 bg-card shadow-premium overflow-hidden">
+          <Card className="rounded-3xl border border-border/40 bg-white shadow-premium overflow-hidden">
             <CardHeader className="border-b border-border/20 pb-4">
-              <CardTitle className="text-lg font-bold text-foreground font-serif flex items-center gap-2">
+              <CardTitle className="text-lg font-bold text-dark font-serif flex items-center gap-2">
                 <Sparkles className="h-4.5 w-4.5 text-accent" /> Monthly Platform Growth
               </CardTitle>
             </CardHeader>
@@ -97,9 +97,9 @@ export default function AnalyticsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <Card className="rounded-3xl border border-border/40 bg-card shadow-premium overflow-hidden">
+          <Card className="rounded-3xl border border-border/40 bg-white shadow-premium overflow-hidden">
             <CardHeader className="border-b border-border/20 pb-4">
-              <CardTitle className="text-lg font-bold text-foreground font-serif flex items-center gap-2">
+              <CardTitle className="text-lg font-bold text-dark font-serif flex items-center gap-2">
                 <Sparkles className="h-4.5 w-4.5 text-accent" /> Audition Leaderboard
               </CardTitle>
             </CardHeader>
@@ -154,9 +154,9 @@ export default function AnalyticsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
         >
-          <Card className="rounded-3xl border border-border/40 bg-card shadow-premium overflow-hidden">
+          <Card className="rounded-3xl border border-border/40 bg-white shadow-premium overflow-hidden">
             <CardHeader className="border-b border-border/20 pb-4">
-              <CardTitle className="text-lg font-bold text-foreground font-serif">Scripture Completeness Index</CardTitle>
+              <CardTitle className="text-lg font-bold text-dark font-serif">Scripture Completeness Index</CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
               <div className="space-y-5">
@@ -165,7 +165,7 @@ export default function AnalyticsPage() {
                   return (
                     <div key={book.title} className="group">
                       <div className="flex items-center justify-between mb-2 text-sm">
-                        <span className="font-bold text-foreground group-hover:text-primary transition-colors">{book.title}</span>
+                        <span className="font-bold text-dark group-hover:text-primary transition-colors">{book.title}</span>
                         <span className="text-xs font-mono font-bold text-slate-550">{percent}%</span>
                       </div>
                       <div className="h-3 rounded-full bg-muted overflow-hidden relative">
@@ -177,7 +177,7 @@ export default function AnalyticsPage() {
                             percent > 70 ? "bg-gradient-to-r from-emerald-500 to-teal-400" : percent > 40 ? "bg-gradient-to-r from-accent to-accent-light" : "bg-gradient-to-r from-primary to-primary-light"
                           }`}
                         />
-                        <div className="absolute top-0 bottom-0 h-full w-[1.5px] bg-card" style={{ left: `calc(${percent}% - 1.5px)` }} />
+                        <div className="absolute top-0 bottom-0 h-full w-[1.5px] bg-white" style={{ left: `calc(${percent}% - 1.5px)` }} />
                       </div>
                     </div>
                   )
@@ -193,9 +193,9 @@ export default function AnalyticsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <Card className="rounded-3xl border border-border/40 bg-card shadow-premium overflow-hidden">
+          <Card className="rounded-3xl border border-border/40 bg-white shadow-premium overflow-hidden">
             <CardHeader className="border-b border-border/20 pb-4">
-              <CardTitle className="text-lg font-bold text-foreground font-serif">Interaction Matrix</CardTitle>
+              <CardTitle className="text-lg font-bold text-dark font-serif">Interaction Matrix</CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
               <div className="grid grid-cols-2 gap-4">
@@ -204,7 +204,7 @@ export default function AnalyticsPage() {
                     <TrendingUp className="h-4 w-4 text-emerald-500" />
                     <span className="text-xs font-bold text-muted uppercase tracking-wider">Avg. Session</span>
                   </div>
-                  <p className="text-3xl font-extrabold text-foreground font-sans leading-none mt-2">24m</p>
+                  <p className="text-3xl font-extrabold text-dark font-sans leading-none mt-2">24m</p>
                   <p className="text-xs font-bold text-emerald-600 mt-2 bg-emerald-500/10 inline-block px-2 py-0.5 rounded-full">+12% vs last month</p>
                 </div>
                 <div className="rounded-2xl bg-accent/5 border border-accent/10 p-5 hover:bg-accent/8 transition-colors duration-200">
@@ -212,7 +212,7 @@ export default function AnalyticsPage() {
                     <TrendingDown className="h-4 w-4 text-red-500" />
                     <span className="text-xs font-bold text-muted uppercase tracking-wider">Bounce Rate</span>
                   </div>
-                  <p className="text-3xl font-extrabold text-foreground font-sans leading-none mt-2">18%</p>
+                  <p className="text-3xl font-extrabold text-dark font-sans leading-none mt-2">18%</p>
                   <p className="text-xs font-bold text-emerald-600 mt-2 bg-emerald-500/10 inline-block px-2 py-0.5 rounded-full">-3% vs last month</p>
                 </div>
                 <div className="rounded-2xl bg-purple-500/5 border border-purple-500/10 p-5 hover:bg-purple-500/8 transition-colors duration-200">
@@ -220,7 +220,7 @@ export default function AnalyticsPage() {
                     <Headphones className="h-4 w-4 text-purple-500" />
                     <span className="text-xs font-bold text-muted uppercase tracking-wider">Session Rate</span>
                   </div>
-                  <p className="text-3xl font-extrabold text-foreground font-sans leading-none mt-2">1.8K</p>
+                  <p className="text-3xl font-extrabold text-dark font-sans leading-none mt-2">1.8K</p>
                   <p className="text-xs font-bold text-emerald-600 mt-2 bg-emerald-500/10 inline-block px-2 py-0.5 rounded-full">+8% vs last month</p>
                 </div>
                 <div className="rounded-2xl bg-emerald-500/5 border border-emerald-500/10 p-5 hover:bg-emerald-500/8 transition-colors duration-200">
@@ -228,7 +228,7 @@ export default function AnalyticsPage() {
                     <Mic className="h-4 w-4 text-emerald-600" />
                     <span className="text-xs font-bold text-muted uppercase tracking-wider">Narration / Wk</span>
                   </div>
-                  <p className="text-3xl font-extrabold text-foreground font-sans leading-none mt-2">97</p>
+                  <p className="text-3xl font-extrabold text-dark font-sans leading-none mt-2">97</p>
                   <p className="text-xs font-bold text-emerald-600 mt-2 bg-emerald-500/10 inline-block px-2 py-0.5 rounded-full">+15% vs last month</p>
                 </div>
               </div>
