@@ -1,36 +1,85 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Church Voice — Scripture Recording Platform
 
-## Getting Started
+A full-stack platform for recording, managing, and listening to scripture audio narration. Built with Next.js (frontend) and Express + MongoDB (backend).
 
-First, run the development server:
+## Project Structure
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+├── frontend/          Next.js 16 app (App Router)
+│   ├── src/app/       Pages and routes
+│   ├── src/components/UI and shared components
+│   └── src/lib/       API client, auth context, utilities
+├── backend/           Express + TypeScript API server
+│   └── src/
+│       ├── routes/    Auth, books, chapters, recordings, analytics
+│       ├── models/    Mongoose schemas (User, Book, Recording)
+│       ├── middleware/ JWT auth, Zod validation
+│       └── utils/     R2 storage, error handling
+├── docker-compose.yml MongoDB + Backend + Frontend
+└── Dockerfile         Multi-stage frontend build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Quick Start (Development)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Prerequisites
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Node.js 20+
+- MongoDB (local or Docker)
 
-## Learn More
+### Backend
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+cd backend
+cp .env.example .env     # Configure MongoDB URI, JWT secret, R2 keys
+npm install
+npm run dev              # Starts on port 4000
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Frontend
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+cd frontend
+npm install
+npm run dev              # Starts on port 3000
+```
 
-## Deploy on Vercel
+Open [http://localhost:3000](http://localhost:3000).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Production (Docker)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+docker compose up --build
+```
+
+This starts:
+- **MongoDB** on port 27017
+- **Backend** (Express API) on port 4000
+- **Frontend** (Next.js standalone) on port 3000
+
+## API Endpoints
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/api/auth/register` | No | Create account |
+| POST | `/api/auth/login` | No | Sign in (returns JWT) |
+| GET | `/api/auth/me` | Yes | Current user profile |
+| GET | `/api/books` | Yes | List user's books |
+| POST | `/api/books` | Yes | Create book with chapters/verses |
+| GET | `/api/books/:id` | Yes | Get book details |
+| PATCH | `/api/books/:id` | Yes | Update book metadata |
+| DELETE | `/api/books/:id` | Yes | Delete book |
+| POST | `/api/recordings/:bookId/chapters/:chapterId/verses/:verseId` | Yes | Upload audio recording |
+| GET | `/api/recordings/:bookId/chapters/:chapterId/verses/:verseId` | Yes | Get recording |
+| GET | `/api/analytics` | Yes | Platform statistics |
+
+## Audio Storage
+
+Audio files are stored on **Cloudflare R2** (S3-compatible). Falls back to local-dev mode if R2 credentials aren't configured.
+
+## Tech Stack
+
+- **Frontend:** Next.js 16, React 19, Tailwind CSS 4, Framer Motion, Recharts
+- **Backend:** Express, TypeScript, Mongoose, JWT, Zod
+- **Database:** MongoDB
+- **Storage:** Cloudflare R2 (S3)
+- **Deployment:** Docker, docker-compose
