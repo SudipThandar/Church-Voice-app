@@ -4,12 +4,13 @@ import { useState, useRef, useCallback, useEffect } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { Mic, Square, Pause, Play, Save, RotateCcw, CheckCircle, ArrowLeft, BookOpen, Volume2, HardDrive } from "lucide-react"
+import { Mic, Square, Pause, Play, Save, RotateCcw, CheckCircle, ArrowLeft, BookOpen, Volume2, HardDrive, Loader2, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { getStoredBooks } from "@/lib/book-storage"
+import { fetchChapterDetail, getRecordingPublicUrl } from "@/lib/queries"
+import type { LibraryBook, ChapterDetail } from "@/lib/types"
 import { formatDuration } from "@/lib/utils"
 import { Waveform } from "@/components/shared/waveform"
 import { cn } from "@/lib/utils"
@@ -19,23 +20,41 @@ type RecorderState = "idle" | "recording" | "paused" | "preview"
 
 export default function RecordingStudioPage() {
   const params = useParams()
-  const [books] = useState(() => getStoredBooks())
-  const book = books.find((b) => b.id === params.bookId) ?? null
-  const chapter = book?.chapters?.find((c) => c.id === params.chapterId || c.number === Number(params.chapterId))
+  const bookSlug = params.bookId as string
+  const chapterNumber = Number(params.chapterId)
+
+  const [book, setBook] = useState<LibraryBook | null>(null)
+  const [chapter, setChapter] = useState<ChapterDetail | null>(null)
+  const [loading, setLoading] = useState(true)
 
   const [currentVerseIndex, setCurrentVerseIndex] = useState(0)
   const [recorderState, setRecorderState] = useState<RecorderState>("idle")
   const [timer, setTimer] = useState(0)
-  const [recordedVerses, setRecordedVerses] = useState<Record<string, boolean>>({})
+  const [saving, setSaving] = useState(false)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [freshBlob, setFreshBlob] = useState<Blob | null>(null)
-  const [recordedBlobs, setRecordedBlobs] = useState<Record<string, Blob>>({})
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false)
   const { speed } = useBottomPlayer()
+
+  useEffect(() => {
+    let cancelled = false
+    fetchChapterDetail(bookSlug, chapterNumber)
+      .then((data) => {
+        if (cancelled) return
+        setBook(data?.book ?? null)
+        setChapter(data?.chapter ?? null)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [bookSlug, chapterNumber])
 
   useEffect(() => {
     if (audioRef.current) {
@@ -137,23 +156,6 @@ export default function RecordingStudioPage() {
     }
   }, [])
 
-  const saveRecording = useCallback(() => {
-    if (!chapter) return
-    const verse = chapter.verses[currentVerseIndex]
-    if (freshBlob) {
-      setRecordedBlobs((prev) => ({ ...prev, [verse.id]: freshBlob }))
-      setFreshBlob(null)
-    }
-    if (audioRef.current) {
-      audioRef.current.pause()
-      audioRef.current.src = ""
-    }
-    setIsPreviewPlaying(false)
-    setRecordedVerses((prev) => ({ ...prev, [verse.id]: true }))
-    setRecorderState("idle")
-    setTimer(0)
-  }, [chapter, currentVerseIndex, freshBlob])
-
   const discardRecording = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause()
@@ -172,33 +174,114 @@ export default function RecordingStudioPage() {
       return
     }
 
-    const verseId = chapter?.verses[currentVerseIndex]?.id
-    let blob = freshBlob
-    if (!blob && verseId && recordedBlobs[verseId]) {
-      blob = recordedBlobs[verseId]
-    }
-    if (!blob || !chapter) return
+    if (!chapter) return
+    const verse = chapter.verses[currentVerseIndex]
 
-    const url = URL.createObjectURL(blob)
+    let url: string | null = null
+    let isObjectUrl = false
+    if (freshBlob) {
+      url = URL.createObjectURL(freshBlob)
+      isObjectUrl = true
+    } else if (verse.recording) {
+      url = verse.recording.audioUrl
+    }
+    if (!url) return
 
     if (!audioRef.current) {
       audioRef.current = new Audio()
     }
     audioRef.current.src = url
     audioRef.current.playbackRate = speed
-    audioRef.current.onended = () => {
+
+    const cleanup = () => {
       setIsPreviewPlaying(false)
-      URL.revokeObjectURL(url)
+      if (isObjectUrl && url) URL.revokeObjectURL(url)
     }
-    audioRef.current.onpause = () => {
-      setIsPreviewPlaying(false)
-      URL.revokeObjectURL(url)
-    }
+    audioRef.current.onended = cleanup
+    audioRef.current.onpause = cleanup
     audioRef.current.play().catch(() => {
       console.error("Audio playback blocked by browser")
     })
     setIsPreviewPlaying(true)
-  }, [chapter, currentVerseIndex, freshBlob, recordedBlobs, isPreviewPlaying, speed])
+  }, [chapter, currentVerseIndex, freshBlob, isPreviewPlaying, speed])
+
+  const saveRecording = useCallback(async () => {
+    if (!chapter || !book || !freshBlob) return
+    const verse = chapter.verses[currentVerseIndex]
+
+    setSaving(true)
+    try {
+      const formData = new FormData()
+      formData.append("audio", freshBlob, `verse-${verse.number}.webm`)
+      formData.append("verseId", verse.id)
+      formData.append("bookSlug", book.slug)
+      formData.append("chapterNumber", String(chapter.number))
+      formData.append("verseNumber", String(verse.number))
+      formData.append("durationSeconds", String(timer))
+
+      const res = await fetch("/api/admin/recordings", { method: "POST", body: formData })
+      if (!res.ok) throw new Error(`Upload failed: ${res.status}`)
+      const data = await res.json()
+
+      setChapter((prev) => {
+        if (!prev) return prev
+        const verses = [...prev.verses]
+        verses[currentVerseIndex] = {
+          ...verses[currentVerseIndex],
+          recording: {
+            audioUrl: getRecordingPublicUrl(data.recording.storage_path),
+            durationSeconds: data.recording.duration_seconds,
+          },
+        }
+        return { ...prev, verses }
+      })
+
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current.src = ""
+      }
+      setIsPreviewPlaying(false)
+      setFreshBlob(null)
+      setRecorderState("idle")
+      setTimer(0)
+    } catch (err) {
+      console.error("Failed to save recording", err)
+    } finally {
+      setSaving(false)
+    }
+  }, [chapter, book, currentVerseIndex, freshBlob, timer])
+
+  const deleteRecording = useCallback(async () => {
+    if (!chapter) return
+    const verse = chapter.verses[currentVerseIndex]
+    if (!verse.recording) return
+
+    try {
+      await fetch("/api/admin/recordings", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ verseId: verse.id }),
+      })
+    } catch (err) {
+      console.error("Failed to delete recording", err)
+    }
+
+    setChapter((prev) => {
+      if (!prev) return prev
+      const verses = [...prev.verses]
+      verses[currentVerseIndex] = { ...verses[currentVerseIndex], recording: null }
+      return { ...prev, verses }
+    })
+  }, [chapter, currentVerseIndex])
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 text-muted">
+        <Loader2 className="h-10 w-10 mb-4 animate-spin text-primary" />
+        <p className="text-sm font-medium">Loading chapter...</p>
+      </div>
+    )
+  }
 
   if (!book || !chapter) {
     return (
@@ -211,8 +294,8 @@ export default function RecordingStudioPage() {
 
   const currentVerse = chapter.verses[currentVerseIndex]
   const totalVerses = chapter.verses.length
-  const recordedCount = Object.keys(recordedVerses).length
-  const completionPercent = Math.round((recordedCount / totalVerses) * 100)
+  const recordedCount = chapter.verses.filter((v) => !!v.recording).length
+  const completionPercent = totalVerses > 0 ? Math.round((recordedCount / totalVerses) * 100) : 0
 
   const goToNextVerse = () => {
     if (currentVerseIndex < totalVerses - 1) {
@@ -221,7 +304,7 @@ export default function RecordingStudioPage() {
   }
 
   const goToVerse = (index: number) => {
-    if (recordedVerses[chapter.verses[index].id] || index === currentVerseIndex) {
+    if (chapter.verses[index].recording || index === currentVerseIndex) {
       setCurrentVerseIndex(index)
     }
   }
@@ -229,7 +312,7 @@ export default function RecordingStudioPage() {
   return (
     <div className="min-h-[calc(100vh-64px)] bg-[#0B0F19] text-[#F8FAFC] py-10">
       <div className="container mx-auto max-w-7xl px-4">
-        
+
         {/* Studio Title Bar */}
         <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
           <div className="flex items-center gap-3">
@@ -259,7 +342,7 @@ export default function RecordingStudioPage() {
         </div>
 
         <div className="grid gap-8 lg:grid-cols-4">
-          
+
           {/* Left Panel: Verses index */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -275,12 +358,12 @@ export default function RecordingStudioPage() {
                 <Progress value={completionPercent} indicatorClassName="bg-accent" trackClassName="bg-slate-800" className="flex-1" />
                 <span className="text-xs font-mono text-slate-400">{completionPercent}%</span>
               </div>
-              
+
               <ScrollArea className="h-[520px] pr-2">
                 <div className="space-y-1.5">
                   {chapter.verses.map((verse, i) => {
                     const isCurrent = i === currentVerseIndex
-                    const isRecorded = recordedVerses[verse.id]
+                    const isRecorded = !!verse.recording
                     return (
                       <button
                         key={verse.id}
@@ -360,7 +443,7 @@ export default function RecordingStudioPage() {
             {/* Waveform Console */}
             <div className="rounded-2xl border border-slate-800 bg-[#0E1524] p-6 shadow-2xl relative overflow-hidden">
               <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:100%_8px] pointer-events-none" />
-              
+
               <div className="rounded-xl bg-[#090D16] border border-slate-900 p-8 shadow-inner">
                 <Waveform
                   isActive={recorderState === "recording" || recorderState === "preview"}
@@ -389,13 +472,13 @@ export default function RecordingStudioPage() {
                     PREVIEW AUDITION
                   </div>
                 )}
-                {recorderState === "idle" && recordedVerses[currentVerse.id] && (
+                {recorderState === "idle" && currentVerse.recording && (
                   <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 uppercase tracking-widest bg-emerald-950/30 px-3 py-1.5 rounded-full border border-emerald-900/30">
                     <CheckCircle className="h-3.5 w-3.5" />
                     Saved to chapter
                   </div>
                 )}
-                {recorderState === "idle" && !recordedVerses[currentVerse.id] && (
+                {recorderState === "idle" && !currentVerse.recording && (
                   <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-widest bg-slate-900/40 px-3 py-1.5 rounded-full border border-transparent">
                     Mic Ready
                   </div>
@@ -404,7 +487,7 @@ export default function RecordingStudioPage() {
 
               {/* Deck Actions Controls */}
               <div className="mt-8 flex items-center justify-center gap-5 border-t border-slate-800/60 pt-6">
-                {recorderState === "idle" && !recordedVerses[currentVerse.id] && (
+                {recorderState === "idle" && !currentVerse.recording && (
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -492,48 +575,36 @@ export default function RecordingStudioPage() {
                     </motion.button>
                     <Button
                       size="icon"
-                      className="rounded-xl h-12 w-12 bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer"
+                      className="rounded-xl h-12 w-12 bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer disabled:opacity-50"
                       onClick={saveRecording}
+                      disabled={saving}
                       title="Save recording"
                     >
-                      <Save className="h-5 w-5" />
+                      {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
                     </Button>
                   </>
                 )}
 
-                {recorderState === "idle" && recordedVerses[currentVerse.id] && (
+                {recorderState === "idle" && currentVerse.recording && (
                   <div className="flex gap-4">
-                    {recordedBlobs[currentVerse.id] && (
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={togglePreview}
-                        className="h-12 w-12 rounded-full bg-accent hover:bg-accent/90 text-dark flex items-center justify-center shadow-lg border-2 border-slate-800 cursor-pointer"
-                      >
-                        {isPreviewPlaying ? (
-                          <Pause className="h-5 w-5" />
-                        ) : (
-                          <Play className="h-5 w-5 fill-current ml-0.5" />
-                        )}
-                      </motion.button>
-                    )}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={togglePreview}
+                      className="h-12 w-12 rounded-full bg-accent hover:bg-accent/90 text-dark flex items-center justify-center shadow-lg border-2 border-slate-800 cursor-pointer"
+                    >
+                      {isPreviewPlaying ? (
+                        <Pause className="h-5 w-5" />
+                      ) : (
+                        <Play className="h-5 w-5 fill-current ml-0.5" />
+                      )}
+                    </motion.button>
                     <Button
                       variant="outline"
                       className="gap-2 border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-850 rounded-xl"
-                      onClick={() => {
-                        setRecordedVerses((prev) => {
-                          const next = { ...prev }
-                          delete next[currentVerse.id]
-                          return next
-                        })
-                        setRecordedBlobs((prev) => {
-                          const next = { ...prev }
-                          delete next[currentVerse.id]
-                          return next
-                        })
-                      }}
+                      onClick={deleteRecording}
                     >
-                      <RotateCcw className="h-4 w-4" /> Re-record
+                      <Trash2 className="h-4 w-4" /> Clear Recording
                     </Button>
                     <Button className="gap-2 bg-accent text-dark hover:bg-accent/90 font-bold rounded-xl shadow-md cursor-pointer" onClick={goToNextVerse}>
                       Next Verse <ArrowLeft className="h-4 w-4 rotate-180" />
@@ -553,14 +624,14 @@ export default function RecordingStudioPage() {
               </div>
               <div className="flex flex-wrap gap-2">
                 {chapter.verses.map((verse, i) => {
-                  const isRecorded = recordedVerses[verse.id]
+                  const isRecorded = !!verse.recording
                   const isCurrent = i === currentVerseIndex
                   return (
                     <button
                       key={verse.id}
                       onClick={() => setCurrentVerseIndex(i)}
                       className={cn(
-                        "flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition-all border",
+                        "flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition-all border cursor-pointer",
                         isRecorded
                           ? "bg-emerald-950/20 border-emerald-900/40 text-emerald-400"
                           : isCurrent

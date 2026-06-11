@@ -11,10 +11,8 @@ import { useEffect, useRef, useState } from "react"
 const SPEEDS = [1, 1.5, 2, 2.5, 3, 4]
 
 export function BottomPlayer() {
-  const { playerState, pause, resume, stop, seek, speed, volume, setSpeed, setVolume } = useBottomPlayer()
-  const { track, isPlaying, duration } = playerState
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const [localProgress, setLocalProgress] = useState(0)
+  const { playerState, pause, resume, stop, seek, next, previous, progress, speed, volume, setSpeed, setVolume } = useBottomPlayer()
+  const { track, isPlaying, currentTime, duration, currentIndex } = playerState
   const [showVolume, setShowVolume] = useState(false)
   const [showSpeed, setShowSpeed] = useState(false)
   const volumeRef = useRef<HTMLDivElement>(null)
@@ -33,32 +31,11 @@ export function BottomPlayer() {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
-  useEffect(() => {
-    if (isPlaying && duration > 0) {
-      const intervalMs = 50
-      intervalRef.current = setInterval(() => {
-        setLocalProgress((prev) => {
-          const next = prev + speed / duration / (1000 / intervalMs)
-          return next >= 1 ? 1 : next
-        })
-      }, intervalMs)
-    } else {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-    }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-    }
-  }, [isPlaying, duration, speed])
-
-  // Reset progress when track changes
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLocalProgress(0)
-  }, [track])
-
-  const displayProgress = localProgress
-
   if (!track) return null
+
+  const currentItem = track.items[currentIndex]
+  const hasPrevious = currentIndex > 0
+  const hasNext = currentIndex < track.items.length - 1
 
   return (
     <AnimatePresence>
@@ -75,11 +52,10 @@ export function BottomPlayer() {
           const clickX = e.clientX - rect.left
           const width = rect.width
           seek((clickX / width) * duration)
-          setLocalProgress(clickX / width)
         }}>
           <motion.div
             className="h-full bg-gradient-to-r from-primary to-accent"
-            style={{ width: `${displayProgress * 100}%` }}
+            style={{ width: `${progress * 100}%` }}
           />
         </div>
 
@@ -95,32 +71,37 @@ export function BottomPlayer() {
               </span>
               <p className="truncate text-base font-semibold text-dark leading-tight mt-1">{track.chapterTitle}</p>
               <p className="truncate text-xs font-medium text-muted">
-                {track.bookTitle}{track.verseNumber ? ` · Verse ${track.verseNumber}` : ""}
+                {track.bookTitle}{currentItem?.verseNumber ? ` · Verse ${currentItem.verseNumber}` : ""}
               </p>
             </div>
           </div>
 
           {/* Center Playback Controls */}
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-muted hover:text-dark hover:bg-muted/50 transition-colors">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full text-muted hover:text-dark hover:bg-muted/50 transition-colors disabled:opacity-30"
+              onClick={previous}
+              disabled={!hasPrevious}
+            >
               <SkipBack className="h-4.5 w-4.5" />
             </Button>
             <Button
               variant="default"
               size="icon"
               className="h-11 w-11 rounded-full bg-accent hover:bg-accent/90 text-dark shadow-md hover:scale-105 transition-all duration-200"
-              onClick={() => {
-                if (isPlaying) {
-                  pause()
-                } else {
-                  if (displayProgress >= 1) setLocalProgress(0)
-                  resume()
-                }
-              }}
+              onClick={() => (isPlaying ? pause() : resume())}
             >
               {isPlaying ? <Pause className="h-5 w-5 fill-current" /> : <Play className="h-5 w-5 fill-current ml-0.5" />}
             </Button>
-            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-muted hover:text-dark hover:bg-muted/50 transition-colors">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full text-muted hover:text-dark hover:bg-muted/50 transition-colors disabled:opacity-30"
+              onClick={next}
+              disabled={!hasNext}
+            >
               <SkipForward className="h-4.5 w-4.5" />
             </Button>
           </div>
@@ -129,20 +110,19 @@ export function BottomPlayer() {
           <div className="hidden md:flex items-center gap-3 flex-1 max-w-sm justify-end">
             <div className="flex items-center gap-2 w-full">
               <span className="text-xs text-muted font-mono w-9 text-right tabular-nums">
-                {formatDuration(Math.floor(displayProgress * duration))}
+                {formatDuration(Math.floor(currentTime))}
               </span>
               <Slider
-                value={[displayProgress * 100]}
+                value={[progress * 100]}
                 onValueChange={(v) => {
                   const val = Array.isArray(v) ? v[0] : v
                   seek((val / 100) * duration)
-                  setLocalProgress(val / 100)
                 }}
                 className="flex-1 cursor-pointer"
                 max={100}
                 step={0.1}
               />
-              <span className="text-xs text-muted font-mono w-9 tabular-nums">{formatDuration(duration)}</span>
+              <span className="text-xs text-muted font-mono w-9 tabular-nums">{formatDuration(Math.floor(duration))}</span>
             </div>
 
             <div className="flex items-center gap-1 shrink-0 border-l border-border/60 pl-3">

@@ -1,20 +1,45 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { BookOpen, Mic, Layers, Music, TrendingUp, Sparkles, BookCheck, Clock } from "lucide-react"
+import { BookOpen, Mic, Layers, Music, TrendingUp, Sparkles, BookCheck, Clock, Loader2 } from "lucide-react"
 import { StatsCard } from "@/components/shared/stats-card"
 import { Progress } from "@/components/ui/progress"
-import { getStoredBooks } from "@/lib/book-storage"
-import { Book } from "@/lib/types"
+import { fetchLibraryBooks } from "@/lib/queries"
+import type { LibraryBook } from "@/lib/types"
 import Link from "next/link"
 
 export default function AdminDashboard() {
-  const [books] = useState<Book[]>(() => getStoredBooks())
+  const [books, setBooks] = useState<LibraryBook[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    fetchLibraryBooks()
+      .then((data) => {
+        if (!cancelled) setBooks(data)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const totalVerses = books.reduce((sum, b) => sum + b.totalVerses, 0)
   const totalChapters = books.reduce((sum, b) => sum + b.totalChapters, 0)
+  const totalRecorded = books.reduce((sum, b) => sum + b.recordedVerses, 0)
   const avgCompletion = books.length > 0 ? Math.round(books.reduce((sum, b) => sum + b.completion, 0) / books.length) : 0
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-12 max-w-7xl flex flex-col items-center justify-center text-muted py-24">
+        <Loader2 className="h-10 w-10 mb-4 animate-spin text-primary" />
+        <p className="text-sm font-medium">Loading dashboard...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-7xl">
@@ -36,7 +61,7 @@ export default function AdminDashboard() {
         <StatsCard
           icon={Mic}
           label="Total Recordings"
-          value={0}
+          value={totalRecorded.toLocaleString()}
           color="green"
           trend="+12%"
           delay={0.15}

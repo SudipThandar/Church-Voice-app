@@ -1,22 +1,47 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { BookOpen, User, Globe, Layers, Clock, Play, ArrowLeft, Headphones, Sparkles, BookOpenCheck } from "lucide-react"
+import { BookOpen, User, Globe, Layers, Clock, Play, ArrowLeft, Headphones, Sparkles, BookOpenCheck, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { getStoredBooks } from "@/lib/book-storage"
+import { fetchBookDetail, fetchBookPlaylist, fetchChapterDetail } from "@/lib/queries"
+import type { BookDetail, ChapterSummary } from "@/lib/types"
 import { formatDuration } from "@/lib/utils"
 import { useBottomPlayer } from "@/components/shared/bottom-player-provider"
 
 export default function BookDetailsPage() {
   const params = useParams()
-  const [books] = useState(() => getStoredBooks())
-  const book = books.find((b) => b.id === params.id) ?? null
+  const slug = params.id as string
+  const [book, setBook] = useState<BookDetail | null>(null)
+  const [loading, setLoading] = useState(true)
   const { play } = useBottomPlayer()
+
+  useEffect(() => {
+    let cancelled = false
+    fetchBookDetail(slug)
+      .then((data) => {
+        if (!cancelled) setBook(data)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [slug])
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 text-muted">
+        <Loader2 className="h-10 w-10 mb-4 animate-spin text-primary" />
+        <p className="text-sm font-medium">Loading volume...</p>
+      </div>
+    )
+  }
 
   if (!book) {
     return (
@@ -28,21 +53,27 @@ export default function BookDetailsPage() {
     )
   }
 
-  const handlePlayBook = () => {
+  const handlePlayBook = async () => {
+    const playlist = await fetchBookPlaylist(book.slug)
+    if (!playlist) return
     play({
       bookTitle: book.title,
       chapterTitle: "Entire Book",
-      duration: book.totalDuration,
       type: "book",
+      items: playlist.items,
     })
   }
 
-  const handlePlayChapter = (chapter: typeof book.chapters[0]) => {
+  const handlePlayChapter = async (chapter: ChapterSummary) => {
+    const detail = await fetchChapterDetail(book.slug, chapter.number)
+    if (!detail) return
     play({
       bookTitle: book.title,
       chapterTitle: chapter.title,
-      duration: chapter.duration,
       type: "chapter",
+      items: detail.chapter.verses
+        .filter((v) => !!v.recording)
+        .map((v) => ({ verseNumber: v.number, verseText: v.text, audioUrl: v.recording!.audioUrl })),
     })
   }
 
@@ -64,7 +95,7 @@ export default function BookDetailsPage() {
             {/* Spine Crease Shadow */}
             <div className="absolute left-0 top-0 bottom-0 w-4.5 bg-gradient-to-r from-black/25 via-black/10 to-transparent z-10 pointer-events-none" />
             <div className="absolute left-4.5 top-0 bottom-0 w-[1px] bg-white/10 z-10 pointer-events-none" />
-            
+
             <div className="flex items-center justify-center flex-1 py-10">
               <BookOpen className="h-28 w-28 text-white/15" />
             </div>
@@ -80,10 +111,11 @@ export default function BookDetailsPage() {
               size="lg"
               className="w-full bg-accent text-dark hover:bg-accent/90 hover:scale-[1.01] font-bold h-14 text-base rounded-xl shadow-lg transition-all duration-200 cursor-pointer"
               onClick={handlePlayBook}
+              disabled={book.recordedVerses === 0}
             >
               <Play className="mr-2 h-5 w-5 fill-current" />
               Play Entire Volume
-              <span className="ml-auto text-xs opacity-80 font-semibold font-mono bg-black/10 px-2.5 py-1 rounded-full">{formatDuration(book.totalDuration)}</span>
+              <span className="ml-auto text-xs opacity-80 font-semibold font-mono bg-black/10 px-2.5 py-1 rounded-full">{formatDuration(book.totalDurationSeconds)}</span>
             </Button>
 
             <div className="space-y-4 rounded-2xl border border-border/40 bg-white p-6 shadow-premium">
@@ -113,7 +145,7 @@ export default function BookDetailsPage() {
                 <Clock className="h-4.5 w-4.5 text-primary" />
                 <div>
                   <p className="text-[10px] uppercase font-bold tracking-wider text-muted">Total Run Duration</p>
-                  <p className="font-semibold text-dark font-mono">{formatDuration(book.totalDuration)}</p>
+                  <p className="font-semibold text-dark font-mono">{formatDuration(book.totalDurationSeconds)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 text-sm pt-2 border-t border-border/20">
@@ -163,12 +195,14 @@ export default function BookDetailsPage() {
                       </div>
                       <div>
                         <p className="font-bold text-dark text-base">{chapter.title}</p>
-                        <p className="text-xs text-muted font-medium mt-0.5">{chapter.verses.length} verses · {formatDuration(chapter.duration)}</p>
+                        <p className="text-xs text-muted font-medium mt-0.5">
+                          {chapter.totalVerses} verses · {chapter.recordedVerses}/{chapter.totalVerses} recorded · {formatDuration(chapter.recordedDurationSeconds)}
+                        </p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Link href={`/reader/${book.id}/${chapter.number}`}>
+                      <Link href={`/reader/${book.slug}/${chapter.number}`}>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -181,8 +215,9 @@ export default function BookDetailsPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-9 w-9 rounded-full text-primary hover:text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                        className="h-9 w-9 rounded-full text-primary hover:text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100 transition-all cursor-pointer disabled:opacity-0"
                         onClick={() => handlePlayChapter(chapter)}
+                        disabled={chapter.recordedVerses === 0}
                       >
                         <Play className="h-4.5 w-4.5 fill-current" />
                       </Button>

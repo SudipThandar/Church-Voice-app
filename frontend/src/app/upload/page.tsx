@@ -1,140 +1,147 @@
 "use client"
 
-import { useState, useRef, useCallback } from "react"
+import { useMemo, useState } from "react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
-import { Upload, FileText, CheckCircle, ArrowRight, X, Sparkles, AlertCircle, Hash, List } from "lucide-react"
+import { CheckCircle, ArrowRight, ArrowLeft, Sparkles, AlertCircle, Hash, List, Loader2, BookOpen } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { addBook, parseFileName } from "@/lib/book-storage"
-import { parseFile, ParsedChapter } from "@/lib/file-parser"
+
+interface ParsedVerse {
+  number: number
+  text: string
+}
+
+interface ParsedChapter {
+  number: number
+  title: string
+  verses: ParsedVerse[]
+}
+
+function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+}
+
+function parseScriptureText(raw: string): ParsedChapter[] {
+  const chapters = new Map<number, ParsedVerse[]>()
+
+  for (const line of raw.split("\n")) {
+    const trimmed = line.trim()
+    if (!trimmed) continue
+    const match = trimmed.match(/^(\d+):(\d+)\s+(.+)$/)
+    if (!match) continue
+    const chapterNum = Number(match[1])
+    const verseNum = Number(match[2])
+    const text = match[3].trim()
+    if (!chapters.has(chapterNum)) chapters.set(chapterNum, [])
+    chapters.get(chapterNum)!.push({ number: verseNum, text })
+  }
+
+  return [...chapters.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([number, verses]) => ({
+      number,
+      title: `Chapter ${number}`,
+      verses: [...verses].sort((a, b) => a.number - b.number),
+    }))
+}
 
 export default function UploadPage() {
-  const [isDragging, setIsDragging] = useState(false)
-  const [file, setFile] = useState<File | null>(null)
-  const [parsing, setParsing] = useState(false)
-  const [importing, setImporting] = useState(false)
-  const [imported, setImported] = useState(false)
-  const [bookTitle, setBookTitle] = useState("")
+  const [step, setStep] = useState<1 | 2 | 3>(1)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState("")
+
+  const [title, setTitle] = useState("")
+  const [slug, setSlug] = useState("")
+  const [slugEdited, setSlugEdited] = useState(false)
   const [author, setAuthor] = useState("")
   const [narrator, setNarrator] = useState("")
   const [language, setLanguage] = useState("English (KJV)")
   const [description, setDescription] = useState("")
-  const [parsedChapters, setParsedChapters] = useState<ParsedChapter[]>([])
-  const [totalDetectedVerses, setTotalDetectedVerses] = useState(0)
-  const [error, setError] = useState("")
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [scriptureText, setScriptureText] = useState("")
+  const [createdBook, setCreatedBook] = useState<{ title: string; slug: string; chapters: number; verses: number } | null>(null)
 
-  const handleDrag = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setIsDragging(true)
-    } else {
-      setIsDragging(false)
-    }
-  }, [])
+  const parsedChapters = useMemo(() => parseScriptureText(scriptureText), [scriptureText])
+  const totalVerses = useMemo(() => parsedChapters.reduce((sum, c) => sum + c.verses.length, 0), [parsedChapters])
 
-  const processFile = useCallback(async (selectedFile: File) => {
-    setFile(selectedFile)
-    setParsing(true)
+  const handleTitleChange = (value: string) => {
+    setTitle(value)
+    if (!slugEdited) setSlug(generateSlug(value))
+  }
+
+  const handleNext = () => {
     setError("")
-
-    const parsed = parseFileName(selectedFile.name)
-    setBookTitle(parsed.title)
-    if (parsed.author) setAuthor(parsed.author)
-
-    try {
-      const result = await parseFile(selectedFile)
-      setBookTitle(result.title || parsed.title)
-      setParsedChapters(result.chapters)
-      setTotalDetectedVerses(result.totalVerses)
-    } catch (e) {
-      console.error("Parse failed:", e)
-      setError("Could not parse file content. You can enter details manually.")
-    } finally {
-      setParsing(false)
-    }
-  }, [])
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
-    const dropped = e.dataTransfer.files[0]
-    if (dropped && (dropped.name.endsWith(".pdf") || dropped.name.endsWith(".epub"))) {
-      processFile(dropped)
-    }
-  }, [processFile])
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = e.target.files?.[0]
-    if (selected) processFile(selected)
-  }
-
-  const chaptersToVerses = (parsedChapters: ParsedChapter[]) => {
-    if (parsedChapters.length > 0) {
-      return parsedChapters.map((pc) => ({
-        id: `${bookTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${pc.number}`,
-        number: pc.number,
-        title: `Chapter ${pc.number}`,
-        verses: pc.verses.map((pv) => ({
-          id: `${bookTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${pc.number}-${pv.number}`,
-          number: pv.number,
-          text: pv.text,
-          duration: Math.max(8, Math.round(pv.text.length / 5)),
-        })),
-        duration: pc.verses.reduce((sum, v) => sum + Math.max(8, Math.round(v.text.length / 5)), 0),
-      }))
-    }
-    return []
-  }
-
-  const handleImport = () => {
-    if (!bookTitle.trim()) {
+    if (!title.trim()) {
       setError("Book title is required")
+      return
+    }
+    if (!slug.trim()) {
+      setError("URL slug is required")
       return
     }
     if (!narrator.trim()) {
       setError("Narrator name is required")
       return
     }
+    setStep(2)
+  }
+
+  const handleSubmit = async () => {
     setError("")
-    setImporting(true)
+    if (parsedChapters.length === 0) {
+      setError("No chapters detected. Paste scripture text using the chapter:verse format below.")
+      return
+    }
 
-    const chapters = chaptersToVerses(parsedChapters)
+    setSubmitting(true)
+    try {
+      const res = await fetch("/api/admin/books", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug: slug.trim(),
+          title: title.trim(),
+          author: author.trim(),
+          narrator: narrator.trim(),
+          language: language.trim(),
+          description: description.trim(),
+          chapters: parsedChapters,
+        }),
+      })
 
-    addBook({
-      title: bookTitle.trim(),
-      author: author.trim() || "Unknown",
-      description: description.trim() || `${bookTitle.trim()} - A scripture recording project.`,
-      language,
-      narrator: narrator.trim(),
-      chapters,
-    })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || "Failed to create book")
+        setSubmitting(false)
+        return
+      }
 
-    setTimeout(() => {
-      setImporting(false)
-      setImported(true)
-    }, 500)
+      setCreatedBook({ title: title.trim(), slug: slug.trim(), chapters: parsedChapters.length, verses: totalVerses })
+      setStep(3)
+    } catch {
+      setError("Failed to create book. Please try again.")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const reset = () => {
-    setFile(null)
-    setParsing(false)
-    setImported(false)
-    setBookTitle("")
+    setStep(1)
+    setTitle("")
+    setSlug("")
+    setSlugEdited(false)
     setAuthor("")
     setNarrator("")
+    setLanguage("English (KJV)")
     setDescription("")
-    setParsedChapters([])
-    setTotalDetectedVerses(0)
+    setScriptureText("")
+    setCreatedBook(null)
     setError("")
   }
-
-  const chapterCount = parsedChapters.length || 1
-  const verseCount = totalDetectedVerses || 0
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-16">
@@ -144,220 +151,211 @@ export default function UploadPage() {
         className="mb-10 text-center"
       >
         <span className="text-xs font-bold text-accent tracking-widest uppercase bg-accent/10 px-3 py-1 rounded-full">Ingestion Hub</span>
-        <h1 className="text-4xl font-bold text-dark font-serif mt-3">Upload Scripture</h1>
-        <p className="mt-2 text-muted">Import a manuscript PDF or EPUB file. Chapters and verses are detected automatically.</p>
+        <h1 className="text-4xl font-bold text-dark font-serif mt-3">Add Scripture</h1>
+        <p className="mt-2 text-muted">Manually enter a new scripture book, then paste its chapters and verses.</p>
       </motion.div>
 
       {/* Step Indicator */}
       <div className="flex items-center justify-between max-w-sm mx-auto mb-10 text-xs font-bold text-muted uppercase tracking-wider">
-        <span className={!file && !imported ? "text-primary border-b-2 border-accent pb-1" : "text-muted"}>1. Upload File</span>
+        <span className={step === 1 ? "text-primary border-b-2 border-accent pb-1" : "text-muted"}>1. Book Details</span>
         <span className="text-muted">➔</span>
-        <span className={file && !imported && !parsing ? "text-primary border-b-2 border-accent pb-1" : "text-muted"}>2. Verify Details</span>
+        <span className={step === 2 ? "text-primary border-b-2 border-accent pb-1" : "text-muted"}>2. Scripture Text</span>
         <span className="text-muted">➔</span>
-        <span className={imported ? "text-primary border-b-2 border-accent pb-1" : "text-muted"}>3. Ready</span>
+        <span className={step === 3 ? "text-primary border-b-2 border-accent pb-1" : "text-muted"}>3. Ready</span>
       </div>
 
-      {!file && !imported && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          onDragEnter={handleDrag}
-          onDragLeave={handleDrag}
-          onDragOver={handleDrag}
-          onDrop={handleDrop}
-          className={`relative rounded-3xl border-2 border-dashed p-16 text-center transition-all duration-300 shadow-premium ${
-            isDragging
-              ? "border-accent bg-accent/5 shadow-glow-accent"
-              : "border-border/85 bg-white hover:border-primary/40"
-          }`}
-        >
-          <input
-            ref={inputRef}
-            type="file"
-            accept=".pdf,.epub"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-          <div className="flex flex-col items-center gap-5">
-            <div className={`rounded-2xl p-4 shadow-sm transition-colors duration-300 ${isDragging ? "bg-accent/20 text-accent" : "bg-primary/10 text-primary"}`}>
-              <Upload className="h-10 w-10" />
-            </div>
-            <div>
-              <p className="text-xl font-bold text-dark">
-                {isDragging ? "Drop your file here" : "Drag & drop your manuscript"}
-              </p>
-              <p className="mt-1.5 text-sm text-muted">Supports standardized .PDF and .EPUB formats</p>
-            </div>
-            <Button
-              variant="outline"
-              className="mt-3 px-6 h-11 font-bold rounded-xl border-border/80 hover:bg-muted/40 cursor-pointer"
-              onClick={() => inputRef.current?.click()}
-            >
-              Choose File
-            </Button>
-          </div>
-        </motion.div>
-      )}
-
-      {/* File Selected - Show Parsing or Metadata Form */}
-      <AnimatePresence>
-        {file && !imported && (
+      <AnimatePresence mode="wait">
+        {step === 1 && (
           <motion.div
+            key="step1"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             className="rounded-3xl border border-border/40 bg-white p-8 shadow-premium"
           >
-            <div className="mb-6 flex items-start justify-between border-b border-border/20 pb-5">
-              <div className="flex items-center gap-4">
-                <div className="rounded-xl bg-primary/10 p-3.5 text-primary">
-                  <FileText className="h-8 w-8" />
+            <h4 className="font-bold text-sm uppercase tracking-wider text-dark flex items-center gap-1.5 mb-5">
+              <Sparkles className="h-4 w-4 text-accent fill-accent" /> Book Details
+            </h4>
+
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="title" className="text-xs font-bold text-muted uppercase tracking-wider mb-1.5 block">Book Title *</label>
+                <Input
+                  id="title"
+                  placeholder="e.g. Gospel of John"
+                  value={title}
+                  onChange={(e) => handleTitleChange(e.target.value)}
+                  className="h-11 rounded-xl border-border/80"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="slug" className="text-xs font-bold text-muted uppercase tracking-wider mb-1.5 block">URL Slug *</label>
+                <Input
+                  id="slug"
+                  placeholder="e.g. john"
+                  value={slug}
+                  onChange={(e) => {
+                    setSlugEdited(true)
+                    setSlug(generateSlug(e.target.value))
+                  }}
+                  className="h-11 rounded-xl border-border/80 font-mono"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="author" className="text-xs font-bold text-muted uppercase tracking-wider mb-1.5 block">Author</label>
+                  <Input
+                    id="author"
+                    placeholder="e.g. John the Apostle"
+                    value={author}
+                    onChange={(e) => setAuthor(e.target.value)}
+                    className="h-11 rounded-xl border-border/80"
+                  />
                 </div>
                 <div>
-                  <h3 className="font-bold text-dark text-lg leading-tight">{file.name}</h3>
-                  <p className="text-xs font-semibold text-muted mt-1 uppercase tracking-wider font-mono">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                  <label htmlFor="narrator" className="text-xs font-bold text-muted uppercase tracking-wider mb-1.5 block">Narrator *</label>
+                  <Input
+                    id="narrator"
+                    placeholder="e.g. John Doe"
+                    value={narrator}
+                    onChange={(e) => setNarrator(e.target.value)}
+                    className="h-11 rounded-xl border-border/80"
+                  />
                 </div>
               </div>
-              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-red-50 hover:text-red-500 transition-colors" onClick={reset}>
-                <X className="h-5 w-5" />
-              </Button>
+
+              <div>
+                <label htmlFor="language" className="text-xs font-bold text-muted uppercase tracking-wider mb-1.5 block">Language / Translation</label>
+                <Input
+                  id="language"
+                  placeholder="e.g. English (KJV)"
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value)}
+                  className="h-11 rounded-xl border-border/80"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="description" className="text-xs font-bold text-muted uppercase tracking-wider mb-1.5 block">Description</label>
+                <textarea
+                  id="description"
+                  placeholder="Brief description of this scripture volume..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="flex min-h-[80px] w-full rounded-xl border border-border/80 bg-transparent px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </div>
             </div>
 
-            {/* Parsing indicator */}
-            {parsing && (
-              <div className="flex flex-col items-center justify-center py-12">
-                <svg className="animate-spin h-10 w-10 text-primary mb-4" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                <p className="text-lg font-bold text-dark">Parsing file structure...</p>
-                <p className="text-sm text-muted mt-1">Extracting chapters and verses from the manuscript.</p>
-              </div>
-            )}
-
-            {/* Detected structure info */}
-            {!parsing && parsedChapters.length > 0 && (
-              <div className="mb-6 rounded-2xl bg-accent/5 border border-accent/20 p-5">
-                <h4 className="font-bold text-sm uppercase tracking-wider text-dark flex items-center gap-1.5 mb-3">
-                  <Sparkles className="h-4 w-4 text-accent fill-accent" /> File Analysis Complete
-                </h4>
-                <div className="flex flex-wrap gap-3">
-                  <Badge variant="outline" className="bg-white border-border/40 text-xs font-semibold px-3 py-1.5 gap-1.5">
-                    <Hash className="h-3.5 w-3.5 text-primary" />
-                    {parsedChapters.length} chapters detected
-                  </Badge>
-                  <Badge variant="outline" className="bg-white border-border/40 text-xs font-semibold px-3 py-1.5 gap-1.5">
-                    <List className="h-3.5 w-3.5 text-primary" />
-                    {totalDetectedVerses} verses found
-                  </Badge>
-                </div>
-              </div>
-            )}
-
-            {!parsing && (
-              <div className="mb-6 space-y-5">
-                <h4 className="font-bold text-sm uppercase tracking-wider text-dark flex items-center gap-1.5">
-                  <Sparkles className="h-4 w-4 text-accent fill-accent" /> Book Details
-                </h4>
-
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="title" className="text-xs font-bold text-muted uppercase tracking-wider mb-1.5 block">Book Title *</label>
-                    <Input
-                      id="title"
-                      placeholder="e.g. Gospel of John"
-                      value={bookTitle}
-                      onChange={(e) => setBookTitle(e.target.value)}
-                      className="h-11 rounded-xl border-border/80"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="author" className="text-xs font-bold text-muted uppercase tracking-wider mb-1.5 block">Author</label>
-                      <Input
-                        id="author"
-                        placeholder="e.g. John the Apostle"
-                        value={author}
-                        onChange={(e) => setAuthor(e.target.value)}
-                        className="h-11 rounded-xl border-border/80"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="narrator" className="text-xs font-bold text-muted uppercase tracking-wider mb-1.5 block">Narrator *</label>
-                      <Input
-                        id="narrator"
-                        placeholder="e.g. John Doe"
-                        value={narrator}
-                        onChange={(e) => setNarrator(e.target.value)}
-                        className="h-11 rounded-xl border-border/80"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="language" className="text-xs font-bold text-muted uppercase tracking-wider mb-1.5 block">Language / Translation</label>
-                    <Input
-                      id="language"
-                      placeholder="e.g. English (KJV)"
-                      value={language}
-                      onChange={(e) => setLanguage(e.target.value)}
-                      className="h-11 rounded-xl border-border/80"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="description" className="text-xs font-bold text-muted uppercase tracking-wider mb-1.5 block">Description</label>
-                    <textarea
-                      id="description"
-                      placeholder="Brief description of this scripture volume..."
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      className="flex min-h-[80px] w-full rounded-xl border border-border/80 bg-transparent px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
             {error && (
-              <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-red-600 bg-red-50 px-4 py-3 rounded-xl border border-red-200">
+              <div className="mt-5 flex items-center gap-2 text-sm font-semibold text-red-600 bg-red-50 px-4 py-3 rounded-xl border border-red-200">
                 <AlertCircle className="h-4 w-4" />
                 {error}
               </div>
             )}
 
-            {!parsing && (
+            <Button
+              size="lg"
+              className="w-full mt-6 bg-accent text-dark hover:bg-accent/90 font-bold h-13 text-base rounded-xl shadow-lg transition-transform hover:scale-[1.01] cursor-pointer"
+              onClick={handleNext}
+            >
+              <span className="flex items-center gap-2 justify-center">
+                Next: Add Scripture Text
+                <ArrowRight className="h-5 w-5" />
+              </span>
+            </Button>
+          </motion.div>
+        )}
+
+        {step === 2 && (
+          <motion.div
+            key="step2"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="rounded-3xl border border-border/40 bg-white p-8 shadow-premium"
+          >
+            <h4 className="font-bold text-sm uppercase tracking-wider text-dark flex items-center gap-1.5 mb-3">
+              <Sparkles className="h-4 w-4 text-accent fill-accent" /> Scripture Text
+            </h4>
+            <div className="mb-4 rounded-2xl bg-muted/30 border border-border/30 p-4 text-xs text-muted leading-relaxed">
+              Paste the full text below, one verse per line, formatted as <code className="font-mono font-semibold text-dark">chapter:verse text</code>. For example:
+              <pre className="mt-2 rounded-lg bg-white border border-border/40 p-3 font-mono text-[11px] text-dark overflow-x-auto">
+{`1:1 In the beginning was the Word, and the Word was with God...
+1:2 The same was in the beginning with God.
+2:1 The third day, there was a wedding in Cana of Galilee...`}
+              </pre>
+            </div>
+
+            <textarea
+              value={scriptureText}
+              onChange={(e) => setScriptureText(e.target.value)}
+              placeholder="1:1 In the beginning..."
+              className="flex min-h-[280px] w-full rounded-xl border border-border/80 bg-transparent px-3 py-2.5 text-sm font-mono outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            />
+
+            {parsedChapters.length > 0 && (
+              <div className="mt-4 rounded-2xl bg-accent/5 border border-accent/20 p-5">
+                <h4 className="font-bold text-sm uppercase tracking-wider text-dark flex items-center gap-1.5 mb-3">
+                  <Sparkles className="h-4 w-4 text-accent fill-accent" /> Detected Structure
+                </h4>
+                <div className="flex flex-wrap gap-3">
+                  <Badge variant="outline" className="bg-white border-border/40 text-xs font-semibold px-3 py-1.5 gap-1.5">
+                    <Hash className="h-3.5 w-3.5 text-primary" />
+                    {parsedChapters.length} chapter{parsedChapters.length !== 1 ? "s" : ""} detected
+                  </Badge>
+                  <Badge variant="outline" className="bg-white border-border/40 text-xs font-semibold px-3 py-1.5 gap-1.5">
+                    <List className="h-3.5 w-3.5 text-primary" />
+                    {totalVerses} verse{totalVerses !== 1 ? "s" : ""} found
+                  </Badge>
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <div className="mt-5 flex items-center gap-2 text-sm font-semibold text-red-600 bg-red-50 px-4 py-3 rounded-xl border border-red-200">
+                <AlertCircle className="h-4 w-4" />
+                {error}
+              </div>
+            )}
+
+            <div className="mt-6 flex gap-3">
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-13 px-6 font-bold rounded-xl border-border/80 hover:bg-muted/40 cursor-pointer"
+                onClick={() => setStep(1)}
+                disabled={submitting}
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
               <Button
                 size="lg"
-                className="w-full bg-accent text-dark hover:bg-accent/90 font-bold h-13 text-base rounded-xl shadow-lg transition-transform hover:scale-[1.01] cursor-pointer"
-                onClick={handleImport}
-                disabled={importing}
+                className="flex-1 bg-accent text-dark hover:bg-accent/90 font-bold h-13 text-base rounded-xl shadow-lg transition-transform hover:scale-[1.01] cursor-pointer"
+                onClick={handleSubmit}
+                disabled={submitting}
               >
-                {importing ? (
+                {submitting ? (
                   <span className="flex items-center gap-2.5 justify-center">
-                    <svg className="animate-spin h-5 w-5 text-dark" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    Saving to library...
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Creating book...
                   </span>
                 ) : (
                   <span className="flex items-center gap-2 justify-center">
                     <ArrowRight className="h-5 w-5" />
-                    Add to Library
+                    Create Book
                   </span>
                 )}
               </Button>
-            )}
+            </div>
           </motion.div>
         )}
-      </AnimatePresence>
 
-      {/* Import Success */}
-      <AnimatePresence>
-        {imported && (
+        {step === 3 && createdBook && (
           <motion.div
+            key="step3"
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
             className="rounded-3xl border border-border/40 bg-white p-10 text-center shadow-premium"
@@ -367,17 +365,22 @@ export default function UploadPage() {
             </div>
             <h2 className="text-2xl font-bold text-dark font-serif">Book Added!</h2>
             <p className="mt-3 text-muted leading-relaxed max-w-md mx-auto">
-              <span className="font-serif font-bold text-dark">{bookTitle}</span> has been added to your library with <strong>{chapterCount}</strong> chapter{chapterCount !== 1 ? "s" : ""}{verseCount > 0 ? <> and <strong>{verseCount}</strong> verses</> : ""}.
+              <span className="font-serif font-bold text-dark">{createdBook.title}</span> has been added to your library with <strong>{createdBook.chapters}</strong> chapter{createdBook.chapters !== 1 ? "s" : ""} and <strong>{createdBook.verses}</strong> verses.
             </p>
-            <div className="mt-8 flex justify-center gap-4">
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
               <Link href="/management">
                 <Button variant="default" className="bg-primary hover:bg-primary/95 text-white px-6 h-11 font-bold rounded-xl shadow-md cursor-pointer">
                   Manage Script
                 </Button>
               </Link>
-              <Link href="/library">
-                <Button variant="outline" className="border-border/80 hover:bg-muted/40 px-6 h-11 font-semibold rounded-xl cursor-pointer">View Library</Button>
+              <Link href={`/book/${createdBook.slug}`}>
+                <Button variant="outline" className="border-border/80 hover:bg-muted/40 px-6 h-11 font-semibold rounded-xl cursor-pointer">
+                  <BookOpen className="h-4 w-4" /> View Book
+                </Button>
               </Link>
+              <Button variant="ghost" className="px-6 h-11 font-semibold rounded-xl cursor-pointer" onClick={reset}>
+                Add Another
+              </Button>
             </div>
           </motion.div>
         )}

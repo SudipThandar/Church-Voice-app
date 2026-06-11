@@ -2,28 +2,36 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { BookOpen, Library, Upload, LayoutDashboard, Mic, BarChart3, Menu, X, LogIn, LogOut, User } from "lucide-react"
+import { BookOpen, Library, Upload, LayoutDashboard, Mic, BarChart3, Menu, X, LogIn, LogOut, ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { useAuth } from "@/lib/auth-context"
 
-const navLinks = [
+const publicLinks = [
   { href: "/", label: "Home", icon: BookOpen },
   { href: "/library", label: "Library", icon: Library },
+]
+
+const adminLinks = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/upload", label: "Upload", icon: Upload },
   { href: "/management", label: "Manage", icon: Mic },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
 ]
 
-export function Navbar() {
+export function Navbar({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname()
   const router = useRouter()
   const [open, setOpen] = useState(false)
-  const { user, logout } = useAuth()
+  const navLinks = isAdmin ? [...publicLinks, ...adminLinks] : publicLinks
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" })
+    router.push("/")
+    router.refresh()
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-white/70 backdrop-blur-md shadow-sm">
@@ -69,13 +77,15 @@ export function Navbar() {
         </nav>
 
         <div className="hidden md:flex items-center gap-2">
-          {user ? (
+          {isAdmin ? (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted font-medium bg-muted/20 px-2.5 py-1 rounded-lg">{user.name}</span>
+              <span className="inline-flex items-center gap-1.5 text-xs text-primary font-bold bg-primary/10 px-2.5 py-1 rounded-lg">
+                <ShieldCheck className="h-3.5 w-3.5" /> Admin
+              </span>
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => { logout(); router.push("/") }}
+                onClick={handleLogout}
                 className="h-9 w-9 rounded-full text-muted hover:text-red-500 cursor-pointer"
                 title="Sign out"
               >
@@ -120,15 +130,15 @@ export function Navbar() {
               })}
             </nav>
             <div className="mt-6 pt-4 border-t border-border/20">
-              {user ? (
+              {isAdmin ? (
                 <div className="flex items-center justify-between px-2">
                   <span className="text-sm font-medium text-dark flex items-center gap-2">
-                    <User className="h-4 w-4 text-primary" /> {user.name}
+                    <ShieldCheck className="h-4 w-4 text-primary" /> Admin
                   </span>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => { logout(); router.push("/"); setOpen(false) }}
+                    onClick={() => { handleLogout(); setOpen(false) }}
                     className="text-red-500 hover:text-red-600 hover:bg-red-50 cursor-pointer"
                   >
                     <LogOut className="h-4 w-4" /> Sign Out

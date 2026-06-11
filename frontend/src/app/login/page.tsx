@@ -1,17 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { BookOpen, Mail, Lock, Eye, EyeOff, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useAuth } from "@/lib/auth-context"
 
 export default function LoginPage() {
   const router = useRouter()
-  const { login } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -24,8 +21,20 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      await login(email, password)
-      router.push("/library")
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || "Login failed")
+      }
+
+      const redirect = new URLSearchParams(window.location.search).get("redirect") || "/admin"
+      router.push(redirect)
+      router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed")
     } finally {
@@ -47,8 +56,8 @@ export default function LoginPage() {
                 <BookOpen className="h-7 w-7 text-white" />
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-dark font-serif">Welcome Back</h1>
-            <p className="text-sm text-muted mt-1">Sign in to your Church Voice account</p>
+            <h1 className="text-2xl font-bold text-dark font-serif">Admin Sign In</h1>
+            <p className="text-sm text-muted mt-1">Sign in to manage Church Voice scripture recordings</p>
           </div>
 
           {error && (
@@ -111,15 +120,6 @@ export default function LoginPage() {
               {loading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-muted">
-              Don&apos;t have an account?{" "}
-              <Link href="/register" className="text-primary font-bold hover:underline">
-                Create one
-              </Link>
-            </p>
-          </div>
         </div>
 
         <div className="mt-6 text-center">

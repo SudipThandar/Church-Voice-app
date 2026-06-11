@@ -1,16 +1,31 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { BookOpen, Headphones, Layers, Mic, Sparkles } from "lucide-react"
+import { BookOpen, Headphones, Layers, Mic, Sparkles, Loader2 } from "lucide-react"
 import { StatsCard } from "@/components/shared/stats-card"
-import { getStoredBooks } from "@/lib/book-storage"
-import { Book } from "@/lib/types"
+import { fetchLibraryBooks } from "@/lib/queries"
+import type { LibraryBook } from "@/lib/types"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function AnalyticsPage() {
-  const [books] = useState<Book[]>(() => getStoredBooks())
+  const [books, setBooks] = useState<LibraryBook[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    fetchLibraryBooks()
+      .then((data) => {
+        if (!cancelled) setBooks(data)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const totalVerses = books.reduce((sum, b) => sum + b.totalVerses, 0)
   const totalChapters = books.reduce((sum, b) => sum + b.totalChapters, 0)
@@ -20,6 +35,15 @@ export default function AnalyticsPage() {
     title: b.title,
     listens: Math.round(b.totalVerses * (100 - b.completion) / 10 + 100),
   }))
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-12 max-w-7xl flex flex-col items-center justify-center text-muted py-24">
+        <Loader2 className="h-10 w-10 mb-4 animate-spin text-primary" />
+        <p className="text-sm font-medium">Loading analytics...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-7xl">
