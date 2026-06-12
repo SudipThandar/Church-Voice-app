@@ -128,7 +128,7 @@ export async function fetchBookPlaylist(slug: string): Promise<{ book: LibraryBo
 
   const { data: chapters, error: chaptersError } = await supabase
     .from("chapters")
-    .select("number, verses(number, text, recordings(storage_path))")
+    .select("number, verses(number, text, recordings(storage_path, duration_seconds))")
     .eq("book_id", bookRow.id)
     .order("number", { ascending: true })
   if (chaptersError) throw chaptersError
@@ -136,13 +136,13 @@ export async function fetchBookPlaylist(slug: string): Promise<{ book: LibraryBo
   const items: PlaylistItem[] = []
   for (const c of (chapters ?? []) as unknown as Array<{
     number: number
-    verses: Array<{ number: number; text: string; recordings: { storage_path: string } | { storage_path: string }[] | null }>
+    verses: Array<{ number: number; text: string; recordings: { storage_path: string; duration_seconds: number } | { storage_path: string; duration_seconds: number }[] | null }>
   }>) {
     const verses = [...(c.verses ?? [])].sort((a, b) => a.number - b.number)
     for (const v of verses) {
       const recording = extractRecording(v.recordings)
       if (recording) {
-        items.push({ verseNumber: v.number, verseText: v.text, audioUrl: getRecordingPublicUrl(recording.storage_path) })
+        items.push({ verseNumber: v.number, verseText: v.text, audioUrl: getRecordingPublicUrl(recording.storage_path), durationSeconds: recording.duration_seconds })
       }
     }
   }

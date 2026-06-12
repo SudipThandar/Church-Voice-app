@@ -63,6 +63,7 @@ export function BottomPlayerProvider({ children }: { children: ReactNode }) {
     audio.playbackRate = speedRef.current
     audio.volume = volumeRef.current / 100
     audio.currentTime = 0
+    setPlayerState((prev) => ({ ...prev, currentTime: 0, duration: item.durationSeconds ?? 0 }))
     audio.play().catch(() => {})
   }, [])
 
@@ -71,21 +72,15 @@ export function BottomPlayerProvider({ children }: { children: ReactNode }) {
     audioRef.current = audio
 
     const onTimeUpdate = () => setPlayerState((prev) => ({ ...prev, currentTime: audio.currentTime }))
+    // MediaRecorder-produced webm files often lack a duration in their
+    // header, so browsers report audio.duration as Infinity/NaN. The
+    // known duration from the recordings table (set via the playlist
+    // item) is used instead; only trust audio.duration if it's a real
+    // finite value.
     const onLoadedMetadata = () => {
-      if (Number.isFinite(audio.duration)) {
+      if (Number.isFinite(audio.duration) && audio.duration > 0) {
         setPlayerState((prev) => ({ ...prev, duration: audio.duration }))
-        return
       }
-      // Chrome reports Infinity for MediaRecorder-produced webm files,
-      // which lack a duration in their header. Seeking past the end
-      // forces the browser to compute the real duration.
-      const onSeeked = () => {
-        audio.removeEventListener("seeked", onSeeked)
-        setPlayerState((prev) => ({ ...prev, duration: Number.isFinite(audio.duration) ? audio.duration : 0 }))
-        audio.currentTime = 0
-      }
-      audio.addEventListener("seeked", onSeeked)
-      audio.currentTime = 1e101
     }
     const onPlay = () => setPlayerState((prev) => ({ ...prev, isPlaying: true }))
     const onPause = () => setPlayerState((prev) => ({ ...prev, isPlaying: false }))
@@ -133,7 +128,7 @@ export function BottomPlayerProvider({ children }: { children: ReactNode }) {
       const finalTrack = { ...track, items: playable }
       trackRef.current = finalTrack
       indexRef.current = 0
-      setPlayerState({ isPlaying: true, currentTime: 0, duration: 0, track: finalTrack, currentIndex: 0 })
+      setPlayerState({ isPlaying: true, currentTime: 0, duration: playable[0].durationSeconds ?? 0, track: finalTrack, currentIndex: 0 })
       loadAndPlay(playable[0])
     },
     [loadAndPlay]
@@ -146,7 +141,7 @@ export function BottomPlayerProvider({ children }: { children: ReactNode }) {
   const resume = useCallback(() => {
     const audio = audioRef.current
     if (!audio) return
-    if (audio.ended || audio.currentTime >= (audio.duration || Infinity)) {
+    if (audio.ended) {
       audio.currentTime = 0
     }
     audio.play().catch(() => {})

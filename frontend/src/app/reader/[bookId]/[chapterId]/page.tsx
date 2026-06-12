@@ -100,7 +100,7 @@ export default function ReaderPage() {
       bookTitle: book.title,
       chapterTitle: chapter.title,
       type: "verse",
-      items: [{ verseNumber: verse.number, verseText: verse.text, audioUrl: verse.recording.audioUrl }],
+      items: [{ verseNumber: verse.number, verseText: verse.text, audioUrl: verse.recording.audioUrl, durationSeconds: verse.recording.durationSeconds }],
     })
   }
 
@@ -112,7 +112,7 @@ export default function ReaderPage() {
       type: "chapter",
       items: chapter.verses
         .filter((v) => !!v.recording)
-        .map((v) => ({ verseNumber: v.number, verseText: v.text, audioUrl: v.recording!.audioUrl })),
+        .map((v) => ({ verseNumber: v.number, verseText: v.text, audioUrl: v.recording!.audioUrl, durationSeconds: v.recording!.durationSeconds })),
     })
   }
 

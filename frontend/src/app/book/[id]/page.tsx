@@ -73,7 +73,7 @@ export default function BookDetailsPage() {
       type: "chapter",
       items: detail.chapter.verses
         .filter((v) => !!v.recording)
-        .map((v) => ({ verseNumber: v.number, verseText: v.text, audioUrl: v.recording!.audioUrl })),
+        .map((v) => ({ verseNumber: v.number, verseText: v.text, audioUrl: v.recording!.audioUrl, durationSeconds: v.recording!.durationSeconds })),
     })
   }
 

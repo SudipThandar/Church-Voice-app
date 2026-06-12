@@ -117,6 +117,7 @@ export interface PlaylistItem {
   verseNumber?: number
   verseText?: string
   audioUrl: string
+  durationSeconds?: number
 }
 
 export interface TrackInfo {
